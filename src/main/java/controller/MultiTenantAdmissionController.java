@@ -6,6 +6,18 @@ import java.util.concurrent.atomic.AtomicLong;
 public class MultiTenantAdmissionController{
     private final ConcurrentHashMap<String, TokenBucket> tenantBuckets = new ConcurrentHashMap<>();
 
+    private final long globalMaxBurst;
+    private final long globalRefillRatePerMs;
+
+    public MultiTenantAdmissionController(long globalMaxBurst, long globalRefillRatePerMs){
+        this.globalMaxBurst = globalMaxBurst;
+        this.globalRefillRatePerMs = globalRefillRatePerMs;
+    }
+
+    public boolean allowRequest(String tenantId, long requiredTokens){
+        TokenBucket bucket = tenantBuckets.computeIfAbsent(tenantId, id ->  new TokenBucket(globalMaxBurst/4, globalRefillRatePerMs/4));
+        return bucket.consume(requiredTokens);
+    };
 }
 
 class TokenBucket{
